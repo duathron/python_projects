@@ -33,13 +33,13 @@ except argparse.ArgumentError as e:
 ##### functions #####
 
 def annuity_ordinary_calc(p, i, n):
-    """Berechne monatliche Rate"""
+    #calculate monthly payment
     i = i / 100 / 12
     a = p * (i * ((1 + i) ** n)) / (((1 + i) ** n) - 1)
     return a
 
 def diff_payment_calc(p, i, n):
-    """Berechne monatliche, differenzierte Rate"""
+    #calculate monthly payment (differentiated)
     i = i / 100 / 12
     repayment = p / n
     d_list = []
@@ -51,14 +51,14 @@ def diff_payment_calc(p, i, n):
     return d_list
 
 def principal_calc(a, i, n):
-    """Berechne Kreditsumme"""
+    #calculate principal loan
     i = i / 100 / 12
     p = a / ((i * ((1 + i) ** n)) / (((1 + i) ** n) - 1))
     return p
 
 
 def periods_calc(p, a, i):
-    """Berechne Anzahl der Raten"""
+    #calculate periods
     i = i / 100 / 12
     if a - i * p <= 0:
         raise ValueError("Monthly payment too low!")
