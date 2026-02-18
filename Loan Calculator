@@ -1,0 +1,127 @@
+### Loan Calculator Project from Hyperskill Course: Python Fundamentals ###
+
+import math
+import argparse
+import sys
+
+##### positive values only -> parser ####
+def pos_int(x):
+    val = int(x)
+    if val <= 0:
+        raise argparse.ArgumentTypeError("must be positive")
+    return val
+
+def pos_float(x):
+    val = float(x)
+    if val <= 0:
+        raise argparse.ArgumentTypeError("must be positive")
+    return val
+
+##### parser #####
+parser = argparse.ArgumentParser(exit_on_error=False,description='Calculate monthly payment amount')
+parser.add_argument('-n', '--periods', type=pos_int, help='Enter number of monthly payments')
+parser.add_argument('-a', '--payment', type=pos_float, help='Enter monthly payment amount')
+parser.add_argument('-i', '--interest', type=pos_float, help='Enter interest rate')
+parser.add_argument('-p', '--principal', type=pos_float, help='Enter amount of principal loan')
+parser.add_argument('-t', '--type', type=str, choices=['annuity', 'diff'], help='Enter type of loan')
+try:
+    args = parser.parse_args()
+except argparse.ArgumentError as e:
+    print(f"Incorrect parameters")
+    sys.exit(1)
+
+##### functions #####
+
+def annuity_ordinary_calc(p, i, n):
+    """Berechne monatliche Rate"""
+    i = i / 100 / 12
+    a = p * (i * ((1 + i) ** n)) / (((1 + i) ** n) - 1)
+    return a
+
+def diff_payment_calc(p, i, n):
+    """Berechne monatliche, differenzierte Rate"""
+    i = i / 100 / 12
+    repayment = p / n
+    d_list = []
+    for m in range(1, n + 1):
+        rem_debt = p - (m - 1) * repayment
+        interest = rem_debt * i
+        rate = repayment + interest
+        d_list.append(rate)
+    return d_list
+
+def principal_calc(a, i, n):
+    """Berechne Kreditsumme"""
+    i = i / 100 / 12
+    p = a / ((i * ((1 + i) ** n)) / (((1 + i) ** n) - 1))
+    return p
+
+
+def periods_calc(p, a, i):
+    """Berechne Anzahl der Raten"""
+    i = i / 100 / 12
+    if a - i * p <= 0:
+        raise ValueError("Monthly payment too low!")
+    n = math.log(a / (a - i * p), 1 + i)
+    return n
+
+##### argparse logic #####
+
+try:
+
+    # calculate missing payment variable
+    if args.payment is None and args.periods is not None and args.interest is not None and args.principal is not None and args.type == "annuity":
+        result = annuity_ordinary_calc(args.principal, args.interest, args.periods)
+        monthly_payment = math.ceil(result)
+
+        overpayment = monthly_payment * args.periods - args.principal
+
+        print(f"Your monthly payment is {monthly_payment}!")
+        print(f"\nOverpayment: {int(overpayment)}")
+
+
+    # calculate missing payment variable (differentiated)
+    elif args.payment is None and args.periods is not None and args.interest is not None and args.principal is not None and args.type == "diff":
+        dm_list = diff_payment_calc(args.principal, args.interest, args.periods)
+        print(f"Your payments will be:")
+        month = 0
+        for obj in dm_list:
+            month = month + 1
+            print(f"Month:", month, math.ceil(obj))
+        
+        overpayment = sum(math.ceil(obj) for obj in dm_list)
+        
+        result_overpayment = overpayment - args.principal
+        print (f"\nOverpayment: {math.ceil(result_overpayment)}")
+
+    # calculate missing principal loan variable
+    elif args.principal is None and args.payment is not None and args.interest is not None and args.periods is not None and args.type is not None:
+        result = principal_calc(args.payment, args.interest, args.periods)
+        print(f"Your loan principal is {math.ceil(result)}!")
+        
+        overpayment = args.payment * args.periods
+        result_overpayment = math.ceil(overpayment) - math.ceil(result)
+        print(f"\nOverpayment: {int(result_overpayment)}")
+
+
+    # calculate missing periods varable
+    elif args.periods is None and args.payment is not None and args.interest is not None and args.principal is not None and args.type is not None:
+        result = periods_calc(args.principal, args.payment, args.interest)
+        if math.ceil(result) % 12 == 0:
+            n_years = math.ceil(result/12)
+            print(f"It will take {n_years} years to repay this loan!")
+        else:
+            n_years = result / 12
+            n_rest = math.ceil(result % 12)
+            print(f"It will take {math.floor(n_years)} year(s) and {n_rest} month(s) to repay this loan!")
+        
+        overpayment = args.payment * math.ceil(result)
+        result_overpayment = math.ceil(overpayment) - args.principal
+        print(f"\nOverpayment: {int(result_overpayment)}")
+
+    else:
+        print("Incorrect parameters")
+
+except ValueError as e:
+    print(f"Error: {e}")
+
